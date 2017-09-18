@@ -1,0 +1,47 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname cat) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+;; Data definition
+
+;; Cat is a Number
+;; interp. x coordinate of Cat
+
+(define C1 0)
+(define C2 (/ WIDTH 2))
+#;
+(define (fn-for-cat c)
+  (... c))
+
+;; Template rules used:
+;; - atomic not-distinct: Number
+
+;; Function
+
+;; Cat -> Cat
+;; increase cat x position by SPEED
+
+(check-expect (next-cat 0) SPEED)
+(check-expect (next-cat 100) (+ 100 SPEED))
+#;
+(define (next-cat c) 1) ; stub
+
+;; <template from Cat>
+
+(define (next-cat c)
+  (+ SPEED c))
+
+;; Cat -> Image
+;; add CAT-IMG to MTS at a proper x coordinate and CTR-Y
+
+(check-expect (render-cat 100)
+              (place-image CAT-IMG 100 CTR-Y MTS))
+#;
+(define (render cat c) MTS) ; stub
+
+;; <template from Cat>
+
+(define (render-cat c)
+  (place-image CAT-IMG c CTR-Y MTS))
+
+
+

@@ -359,31 +359,11 @@
 ;; Game -> Game
 ;; Deletes invaders and rockets that were destroyed
 ;; !!!
-#;
-(check-expect (rm-hit-invaders-missiles (make-game (list I1) (list M2) T0))
-              (make-game empty empty T0))
-#;
-(check-expect (rm-hit-invaders-missiles (make-game empty empty T0))
-              (make-game empty empty T0))
-#;
-(check-expect (rm-hit-invaders-missiles (make-game (list I1 I2) (list M1 M3) T1))
-              (make-game (list I2) (list M1) T1))
-
 (define (rm-hit-invaders-missiles game) game) ; stub
-#;
-(define (rm-hit-invaders-missiles game)
-  (rm-loi-lom (game-invaders game) (game-missiles game) (game-t game)))
 
-;; ListOfInvaders ListOfMissiles Tank -> Game
-#;
-(define (rm-loi-lom loi lom t)
-  (cond [(empty? loi) empty]
-        [(empty? lom) empty]
-        [else
-         (if (and (< (abs (- (invader-x (first loi)) (missile-x (first lom)))) HIT-RANGE)
-                  (< (abs (- (invader-y (frist loi)) (missile-y (first lom)))) HIT-RANGE))
-             (rm-loi-lom (rest loi) (rest lom) t))
-         ]))
+
+
+
 
 
 ;; ==============================================================================
@@ -399,9 +379,15 @@
               (place-image TANK 50 (- HEIGHT TANK-HEIGHT/2) BACKGROUND))
  
 (check-expect (render-game G2)
-              (place-image TANK 50 (- HEIGHT TANK-HEIGHT/2)
-                           (place-image MISSILE 150 300
-                                        (place-image INVADER 150 100
+              (place-image TANK
+                           50
+                           (- HEIGHT TANK-HEIGHT/2)
+                           (place-image MISSILE
+                                        150
+                                        300
+                                        (place-image INVADER
+                                                     150
+                                                     100
                                                      BACKGROUND))))
 
 ;(define (render-game game) BACKGROUND) ; stub
@@ -424,6 +410,7 @@
                            (place-image INVADER 150 HEIGHT
                                         (place-image INVADER 150 (+ HEIGHT 10) BACKGROUND))))
               
+
 ;(define (render-loinvader loi bg) INVADER) ; stub
 
 (define (render-loinvader loi bg)
@@ -435,6 +422,7 @@
 
 ;; ListOfMissile -> ListOfMissile
 ;; renders image of missiles
+
 (check-expect (render-lom empty BACKGROUND) BACKGROUND)
 (check-expect (render-lom (cons M1 empty) BACKGROUND)
               (place-image MISSILE (missile-x M1) (missile-y M1) BACKGROUND))
@@ -455,7 +443,6 @@
                       (missile-x (first lom))
                       (missile-y (first lom))
                       (render-lom (rest lom) bg))]))
-
 
 ;; Tank -> Image
 ;; renders Tank
@@ -485,15 +472,14 @@
                     (game-t game))]
         [else game]))
 
-
 ;; ListOfMissiles Tank-> ListOfMissiles
 ;; produces a new instance of missile according to the position of tank
 (define (crt-new-missile lom t)
   (cons (make-missile (tank-x t) (- HEIGHT TANK-HEIGHT/2)) lom))
 
-
 ;; Game -> Boolean
 ;; Checks if the game should end considering the position of enemies
+;; !!!
 (check-expect (stop-game G0) false)
 (check-expect (stop-game (make-game (list (make-invader (/ WIDTH 2) HEIGHT 10)) empty T0)) true)
 (check-expect (stop-game (make-game (list (make-invader WIDTH 0 32) (make-invader 30 HEIGHT 2)) empty T1)) true)
@@ -503,14 +489,14 @@
 (define (stop-game game)
   (check-loinvader (game-invaders game)))
 
-
 ;; ListOfInvader -> Boolean
 ;; produces true if any invaders reached the bottom of the screen
 (check-expect (check-loinvader empty) false)
 (check-expect (check-loinvader (list (make-invader 0 0 1))) false)
 (check-expect (check-loinvader (list (make-invader (/ WIDTH 2) HEIGHT 10))) true)
 (check-expect (check-loinvader (list (make-invader 200 120 5)
-                                     (make-invader 100 (- HEIGHT 1) 9))) false)
+                                     (make-invader 100 (- HEIGHT 1) 9)))
+              false)
 
 ;(define (check-loinvader loi) false) ; stub
 

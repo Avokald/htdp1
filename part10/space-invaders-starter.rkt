@@ -104,6 +104,7 @@
 
 (define G0 (make-game empty empty T0))
 (define G1 (make-game empty empty T1))
+(define G5 (make-game (list (make-invader (/ WIDTH 2) 0 1)) empty T0))
 (define G2 (make-game (list I1) (list M1) T1))
 (define G3 (make-game (list I1 I2) (list M1 M2) T1))
 
@@ -160,6 +161,8 @@
              (advance-tank (game-t game))))
 
 
+;; ========================================================================
+;; INVADERS PART
 
 ;; ListOfInvader -> ListOfInvader
 ;; Produces ListOfInvader advancing every invader on the screen
@@ -232,7 +235,7 @@
 
 (define (check-invader invader)
   (if (or (and (>= (invader-x invader) WIDTH) (>= (invader-dx invader) 0))
-             (and (<= (invader-x invader) 0) (<= (invader-dx invader) 0)))
+          (and (<= (invader-x invader) 0) (<= (invader-dx invader) 0)))
       (make-invader (invader-x invader) (invader-y invader) (* (invader-dx invader) -1))
       invader))
 
@@ -253,24 +256,58 @@
                 (invader-dx invader)))
 
 
-  
+;; ===================================================================================
+;; MISSILES PART
+
+;; ListOfMissiles -> ListOfMissiles
+;; removes the missiles that are already beyond the screen
+(check-expect (rm-far-lom empty) empty)
+(check-expect (rm-far-lom (list (make-missile (/ WIDTH 2) (/ HEIGHT 2))))
+              (list (make-missile (/ WIDTH 2) (/ HEIGHT 2))))
+(check-expect (rm-far-lom (list (make-missile (/ WIDTH 3) 0))) empty)
+(check-expect (rm-far-lom (list (make-missile 0 HEIGHT) (make-missile 150 -1)))
+              (list (make-missile 0 HEIGHT)))
+(check-expect (rm-far-lom (list (make-missile WIDTH 220) (make-missile 75 1)))
+              (list (make-missile WIDTH 220) (make-missile 75 1)))
+
+;(define (rm-far-lom lom) lom) ; stub
+
+(define (rm-far-lom lom)
+  (cond [(empty? lom) empty]
+        [else
+         (if (<= (missile-y (first lom)) 0)
+             (rm-far-lom (rest lom))
+             (cons (first lom) (rm-far-lom (rest lom))))]))
+
+;; ListOfMissiles -> ListOfMissiles
+;; Advances the position of missiles and removes one that reached the top of the screen
+(check-expect (advance-missiles empty) empty)
+(check-expect (advance-missiles (list (make-missile 150 200) (make-missile 20 0)))
+              (list (make-missile 150 190)))
+
+;(define (advance-missiles missiles) empty) ; stub
+
+(define (advance-missiles missiles)
+  (rm-far-lom (advance-missiles-wo-rm missiles)))
+
+
 ;; ListOfMissiles -> ListOfMissiles
 ;; Advances the position of missiles
 
-(check-expect (advance-missiles empty) empty)
-(check-expect (advance-missiles (cons (make-missile 150 300) empty))
+(check-expect (advance-missiles-wo-rm empty) empty)
+(check-expect (advance-missiles-wo-rm (cons (make-missile 150 300) empty))
               (cons (make-missile 150 290) empty))
-(check-expect (advance-missiles
+(check-expect (advance-missiles-wo-rm
                (cons (make-missile 100 100) (cons (make-missile 190 20) empty)))
               (cons (make-missile 100 90) (cons (make-missile 190 10) empty)))
 
-;(define (advance-missiles missiles) missiles) ; stub
+;(define (advance-missiles-wo-rm missiles) missiles) ; stub
 
-(define (advance-missiles missiles)
+(define (advance-missiles-wo-rm missiles)
   (cond [(empty? missiles) empty]
         [else
          (cons (advance-missile  (first missiles))
-               (advance-missiles (rest missiles)))]))
+               (advance-missiles-wo-rm (rest missiles)))]))
 
 ;; Missile -> Missile
 ;; advances the position missile
@@ -283,6 +320,9 @@
 (define (advance-missile missile)
   (make-missile (missile-x missile) (- (missile-y missile) MISSILE-SPEED)))
 
+
+;; ===================================================================================
+;; TANK PART
 
 ;; Tank -> Tank
 ;; advances the position of tank by its speed
@@ -419,17 +459,53 @@
   
 ;; Game -> Game
 ;; produces a game changing values of position and creating objects according to the pressed key
-;; !!!
-(define (handle-key game key-pressed) game) ; stub
+(check-expect (handle-key G0 " ")
+              (make-game (game-invaders G0)
+                         (list (make-missile (tank-x (game-t G0)) (- HEIGHT TANK-HEIGHT/2)))
+                         (game-t G0)))
+(check-expect (handle-key G0 "o") G0)
 
+(define (handle-key game key-pressed)
+  (cond [(key=? " " key-pressed)
+         (make-game (game-invaders game)
+                    (crt-new-missile (game-missiles game) (game-t game))
+                    (game-t game))]
+        [else game]))
+
+;; ListOfMissiles Tank-> ListOfMissiles
+;; produces a new instance of missile according to the position of tank
+(define (crt-new-missile lom t)
+  (cons (make-missile (tank-x t) (- HEIGHT TANK-HEIGHT/2)) lom))
 
 ;; Game -> Boolean
 ;; Checks if the game should end considering the position of enemies
 ;; !!!
-(define (stop-game game) false) ; stub
+(check-expect (stop-game G0) false)
+(check-expect (stop-game (make-game (list (make-invader (/ WIDTH 2) HEIGHT 10)) empty T0)) true)
+(check-expect (stop-game (make-game (list (make-invader WIDTH 0 32) (make-invader 30 HEIGHT 2)) empty T1)) true)
 
+;(define (stop-game game) false) ; stub
 
+(define (stop-game game)
+  (check-loinvader (game-invaders game)))
 
+;; ListOfInvader -> Boolean
+;; produces true if any invaders reached the bottom of the screen
+(check-expect (check-loinvader empty) false)
+(check-expect (check-loinvader (list (make-invader 0 0 1))) false)
+(check-expect (check-loinvader (list (make-invader (/ WIDTH 2) HEIGHT 10))) true)
+(check-expect (check-loinvader (list (make-invader 200 120 5)
+                                     (make-invader 100 (- HEIGHT 1) 9)))
+              false)
+
+;(define (check-loinvader loi) false) ; stub
+
+(define (check-loinvader loi)
+  (cond [(empty? loi) false]
+        [else
+         (if (>= (invader-y (first loi)) HEIGHT)
+             true
+             (check-loinvader (rest loi)))]))
 
 
 

@@ -359,31 +359,151 @@
 ;; Game -> Game
 ;; Deletes invaders and rockets that were destroyed
 ;; !!!
-#;
-(check-expect (rm-hit-invaders-missiles (make-game (list I1) (list M2) T0))
-              (make-game empty empty T0))
-#;
-(check-expect (rm-hit-invaders-missiles (make-game empty empty T0))
-              (make-game empty empty T0))
-#;
-(check-expect (rm-hit-invaders-missiles (make-game (list I1 I2) (list M1 M3) T1))
-              (make-game (list I2) (list M1) T1))
 
-(define (rm-hit-invaders-missiles game) game) ; stub
-#;
 (define (rm-hit-invaders-missiles game)
-  (rm-loi-lom (game-invaders game) (game-missiles game) (game-t game)))
+  (make-game (rm-missiles-from-invaders (game-invaders game) (game-missiles game))
+             (rm-invaders-from-missiles (game-invaders game) (game-missiles game))
+             (game-t game)))
 
-;; ListOfInvaders ListOfMissiles Tank -> Game
-#;
-(define (rm-loi-lom loi lom t)
-  (cond [(empty? loi) empty]
-        [(empty? lom) empty]
+;; ListOfInvader ListOfMissile -> ListOfInvader
+;; produces list of invaders removing ones, that have the same values of coordinates as missiles in the list of missiles
+(check-expect (rm-missiles-from-invaders empty empty) empty)
+(check-expect (rm-missiles-from-invaders (list (make-invader 0 0 1)) empty) (list (make-invader 0 0 1)))
+(check-expect (rm-missiles-from-invaders empty (list (make-missile 0 0))) empty)
+(check-expect (rm-missiles-from-invaders (list (make-invader 0 0 1))
+                                         (list (make-missile 0 0)))
+              empty)
+(check-expect (rm-missiles-from-invaders (list (make-invader 0 0 1))
+                                         (list (make-missile 0 9)))
+              empty)
+(check-expect (rm-missiles-from-invaders (list (make-invader 0 0 1)
+                                               (make-invader 100 100 2))
+                                         (list (make-missile 100 93)))
+              (list (make-invader 0 0 1)))
+(check-expect (rm-missiles-from-invaders (list (make-invader 50 50 3))
+                                         (list (make-missile 42 49)
+                                               (make-missile 0 20)))
+              empty)
+(check-expect (rm-missiles-from-invaders (list (make-invader 130 20 2)
+                                               (make-invader 220 0 1)
+                                               (make-invader 56 34 8))
+                                         (list (make-missile 49 32)
+                                               (make-missile 220 0)
+                                               (make-missile 0 0)))
+              (list (make-invader 130 20 2)))
+
+;(define (rm-missiles-from-invaders invaders missiles) empty) ; stub
+
+(define (rm-missiles-from-invaders invaders missiles)
+  (cond [(empty? invaders) empty]
+        [(empty? missiles) invaders]
         [else
-         (if (and (< (abs (- (invader-x (first loi)) (missile-x (first lom)))) HIT-RANGE)
-                  (< (abs (- (invader-y (frist loi)) (missile-y (first lom)))) HIT-RANGE))
-             (rm-loi-lom (rest loi) (rest lom) t))
-         ]))
+         (rm-missiles-from-invaders (rm-missile-from-invaders invaders (first missiles)) (rest missiles))]))
+
+;; ListOfInvader Missile -> ListOfInvader
+;; checks if Missile hit any of the given invaders, produces a list of unhit invaders
+(check-expect (rm-missile-from-invaders empty (make-missile 0 0)) empty)
+(check-expect (rm-missile-from-invaders (list (make-invader 100 100 1))
+                                        (make-missile 0 0))
+              (list (make-invader 100 100 1)))
+(check-expect (rm-missile-from-invaders (list (make-invader 0 0 2))
+                                        (make-missile 0 0))
+              empty)
+(check-expect (rm-missile-from-invaders (list (make-invader 0 0 3)
+                                              (make-invader 100 200 1)
+                                              (make-invader WIDTH HEIGHT 2))
+                                        (make-missile 98 201))
+              (list (make-invader 0 0 3)
+                    (make-invader WIDTH HEIGHT 2)))
+
+;(define (rm-missile-from-invaders invaders missile) empty) ; stub
+
+(define (rm-missile-from-invaders invaders missile)
+  (cond [(empty? invaders) empty]
+        [else
+         (if (< (sqrt (+ (sqr (- (invader-x (first invaders))
+                                 (missile-x missile)))
+                         (sqr (- (invader-y (first invaders))
+                                 (missile-y missile)))))
+                10)
+             (rest invaders)
+             (cons (first invaders) (rm-missile-from-invaders (rest invaders) missile)))]))
+
+
+  
+;; ListOfMissiles ListOfInvaders -> ListOfMissiles
+;; produces list of missiles removing ones, that have the same values of coordinates as invaders in the list of invaders
+;; !!!
+(check-expect (rm-invaders-from-missiles empty empty) empty)
+(check-expect (rm-invaders-from-missiles (list (make-invader 0 0 1))
+                                         empty)
+              empty)
+(check-expect (rm-invaders-from-missiles empty
+                                         (list (make-missile 0 0)))
+              (list (make-missile 0 0)))
+(check-expect (rm-invaders-from-missiles (list (make-invader 0 0 1))
+                                         (list (make-missile 0 0)))
+              empty)
+(check-expect (rm-invaders-from-missiles (list (make-invader 0 0 1))
+                                         (list (make-missile 0 9)))
+              empty)
+(check-expect (rm-invaders-from-missiles (list (make-invader 100 93 1))
+                                         (list (make-missile 0 0)
+                                               (make-missile 100 100)))
+              (list (make-missile 0 0)))
+(check-expect (rm-invaders-from-missiles (list (make-invader 50 50 3))
+                                         (list (make-missile 42 49)
+                                               (make-missile 0 20)))
+              (list (make-missile 0 20)))
+(check-expect (rm-invaders-from-missiles (list (make-invader 130 20 2)
+                                               (make-invader 220 0 1)
+                                               (make-invader 56 34 8))
+                                         (list (make-missile 49 32)
+                                               (make-missile 220 0)
+                                               (make-missile 0 0)))
+              (list (make-missile 0 0)))
+
+;(define (rm-invaders-from-missiles invaders missiles) missiles) ; stub
+
+(define (rm-invaders-from-missiles invaders missiles)
+  (cond [(empty? invaders) missiles]
+        [(empty? missiles) empty]
+        [else
+         (rm-invaders-from-missiles
+          (rest invaders)
+          (rm-invader-from-missiles (first invaders) missiles))]))
+
+
+;; Invader ListOfMissile -> ListOfMissile
+;; checks if Invader hit any of the given missiles, produces a list of unhit missiles
+(check-expect (rm-invader-from-missiles (make-invader 0 0 1) empty) empty)
+(check-expect (rm-invader-from-missiles (make-invader 100 100 1)
+                                        (list (make-missile 0 0)))
+              (list (make-missile 0 0)))
+(check-expect (rm-invader-from-missiles (make-invader 0 0 2)
+                                        (list (make-missile 0 0)))
+              empty)
+(check-expect (rm-invader-from-missiles (make-invader 0 0 3)
+                                        (list (make-missile 0 0)
+                                              (make-missile 100 200)
+                                              (make-missile WIDTH HEIGHT)))
+              (list (make-missile 100 200)
+                    (make-missile WIDTH HEIGHT)))
+
+;(define (rm-invader-from-missiles invader missiles) empty) ; stub
+
+(define (rm-invader-from-missiles invader missiles)
+  (cond [(empty? missiles) empty]
+        [else
+         (if (< (sqrt (+ (sqr (- (missile-x (first missiles))
+                                 (invader-x invader)))
+                         (sqr (- (missile-y (first missiles))
+                                 (invader-y invader)))))
+                10)
+             (rest missiles)
+             (cons (first missiles) (rm-invader-from-missiles invader (rest missiles))))]))
+
+
 
 
 ;; ==============================================================================
